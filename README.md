@@ -8,12 +8,12 @@
 5. 学习计算机网络
 ---
 ## 主线
-### CS15-213: CSAPP (CMU)
-### CS61A: Structure and Interpretation of Computer Programs (UCB)
-### CS144：CS144: Computer Network (Stanford)
-### CS162: Operating System (UCB)
+### 操作系统 CS15-213: CSAPP (CMU)
+### 编程 CS61A: Structure and Interpretation of Computer Programs (UCB)
+### 计算机网络 CS144： Computer Network (Stanford)
+### 操作系统 CS162: Operating System (UCB)
 ---
 ## 支线
-### MIT-Missing-Semester (MIT)
-### CS61C: Great Ideas in Computer Architecture (UCB)
-### CS106L: Standard C\+\+ Programming (Stanford)
+### 基础知识 MIT-Missing-Semester (MIT)
+### C++ CS106L: Standard C\+\+ Programming (Stanford)
+### 体系结构 CS61C: Great Ideas in Computer Architecture (UCB)
