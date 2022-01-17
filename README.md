@@ -16,5 +16,6 @@
 ---
 ## 支线
 ### 基础知识 MIT-Missing-Semester (MIT)
+### Linux：鸟哥
 ### C\+\+ CS106L: Standard C\+\+ Programming (Stanford)
 ### 体系结构 CS61C: Great Ideas in Computer Architecture (UCB)
