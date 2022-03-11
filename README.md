@@ -6,6 +6,7 @@
 3. 学完其他入门课程
 4. 学习Modern C\+\+
 5. 学习另外一门语言
+6. 学习linux内核
 
 ---
 ## 主线
@@ -13,6 +14,7 @@
 ### 编程 CS61A: Structure and Interpretation of Computer Programs (UCB)
 ### 计算机网络 CS144： Computer Network (Stanford)
 ### 操作系统 CS162: Operating System (UCB)
+### 奔跑吧linux内核
 ---
 ## 支线
 ### 基础知识 MIT-Missing-Semester (MIT)
