@@ -11,11 +11,9 @@
  */
 team_t team = {"Fuck nan yang bei yuan", /* Team name */
 
-			   "Xin Tong",			  /* Second member full name (leave blank if none) */
-			   "xin_tong@sjtu.edu.cn" /* Second member email addr (leave blank if none) */
-
-			   "",
-			   ""};
+			   "Xin Tong",			   /* Second member full name (leave blank if none) */
+			   "xin_tong@sjtu.edu.cn", /* Second member email addr (leave blank if none) */
+			   "", ""};
 
 /***************
  * ROTATE KERNEL
@@ -41,7 +39,11 @@ void naive_rotate(int dim, pixel *src, pixel *dst) {
  * IMPORTANT: This is the version you will be graded on
  */
 char rotate_descr[] = "rotate: Current working version";
-void rotate(int dim, pixel *src, pixel *dst) { naive_rotate(dim, src, dst); }
+void rotate(int dim, pixel *src, pixel *dst) {
+	int i, j;
+	for (i = 0; i < dim; i++)
+		for (j = 0; j < dim; j++) dst[RIDX(dim - 1 - j, i, dim)] = src[RIDX(i, j, dim)];
+}
 
 /*********************************************************************
  * register_rotate_functions - Register all of your different versions
@@ -52,7 +54,7 @@ void rotate(int dim, pixel *src, pixel *dst) { naive_rotate(dim, src, dst); }
  *********************************************************************/
 
 void register_rotate_functions() {
-	add_rotate_function(&naive_rotate, naive_rotate_descr);
+	// add_rotate_function(&naive_rotate, naive_rotate_descr);
 	add_rotate_function(&rotate, rotate_descr);
 	/* ... Register additional test functions here */
 }
@@ -157,6 +159,6 @@ void smooth(int dim, pixel *src, pixel *dst) { naive_smooth(dim, src, dst); }
 
 void register_smooth_functions() {
 	add_smooth_function(&smooth, smooth_descr);
-	add_smooth_function(&naive_smooth, naive_smooth_descr);
+	// add_smooth_function(&naive_smooth, naive_smooth_descr);
 	/* ... Register additional test functions here */
 }
