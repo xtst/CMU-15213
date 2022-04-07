@@ -80,7 +80,7 @@ void rotate(int dim, pixel *src, pixel *dst) {
 
 void register_rotate_functions() {
 	// add_rotate_function(&naive_rotate, naive_rotate_descr);
-	// add_rotate_function(&rotate_16, rotate_descr16);
+	add_rotate_function(&rotate_16, rotate_descr16);
 	add_rotate_function(&rotate, rotate_descr8);
 	/* ... Register additional test functions here */
 }
@@ -148,7 +148,10 @@ static pixel avg2(int dim, int i, int j, pixel *src) {
 	pixel_sum sum;
 	pixel current_pixel;
 
-	initialize_pixel_sum(&sum);
+	sum.red = 0;
+	sum.green = 0;
+	sum.blue = 0;
+	sum.num = 0;
 	int low1 = Max(i - 1, 0), up1 = Min(i + 1, dim - 1), low2 = Max(j - 1, 0), up2 = Min(j + 1, dim - 1);
 	for (ii = low1; ii <= up1; ii++)
 		for (jj = low2; jj <= up2; jj++) {
@@ -197,7 +200,7 @@ void naive_smooth(int dim, pixel *src, pixel *dst) {
  * smooth - Your current working version of smooth.
  * IMPORTANT: This is the version you will be graded on
  */
-char smooth_descr[] = "smooth: smooth with blocking and no function";
+char smooth_block_nofunc_descr[] = "smooth: smooth with blocking and no function";
 void smooth_block_nofunc(int dim, pixel *src, pixel *dst) {
 	int num = dim >> 3;
 	for (int i = 0; i < num; i++) {
@@ -212,17 +215,33 @@ void smooth_block_nofunc(int dim, pixel *src, pixel *dst) {
 }
 
 char smooth_descr[] = "smooth: Current working version";
-void smooth_block_nofunc(int dim, pixel *src, pixel *dst) {
-	int num = dim >> 3;
-	for (int i = 0; i < num; i++) {
-		for (int j = 0; j < num; j++) {
-			int ifrom = (i << 3), jfrom = (j << 3);
-			for (int a = 0; a < 8; a++)
-				for (int b = 0; b < 8; b++) { dst[RIDX(ifrom + a, jfrom + b, dim)] = avg2(dim, ifrom + a, jfrom + b, src); }
+int sum[1027][1027][3];
+void smooth(int dim, pixel *src, pixel *dst) {
+	int km = dim - 1;
+	for (int i = 1; i <= dim; i++)
+		for (int j = 1; j <= dim; j++) {
+			sum[i][j][0] = sum[i - 1][j][0] + sum[i][j - 1][0] - sum[i - 1][j - 1][0] + src[RIDX(i - 1, j - 1, dim)].red;
+			sum[i][j][1] = sum[i - 1][j][1] + sum[i][j - 1][1] - sum[i - 1][j - 1][1] + src[RIDX(i - 1, j - 1, dim)].blue;
+			sum[i][j][2] = sum[i - 1][j][2] + sum[i][j - 1][2] - sum[i - 1][j - 1][2] + src[RIDX(i - 1, j - 1, dim)].green;
 		}
+
+	for (int i = 1; i < km; i++)
+		for (int j = 1; j < km; j++) {
+			dst[RIDX(i, j, dim)].red =
+				(unsigned int)(sum[i + 2][j + 2][0] - sum[i - 1][j + 2][0] - sum[i + 2][j - 1][0] + sum[i - 1][j - 1][0]) / 9;
+			dst[RIDX(i, j, dim)].blue =
+				(unsigned int)(sum[i + 2][j + 2][1] - sum[i - 1][j + 2][1] - sum[i + 2][j - 1][1] + sum[i - 1][j - 1][1]) / 9;
+			dst[RIDX(i, j, dim)].green =
+				(unsigned int)(sum[i + 2][j + 2][2] - sum[i - 1][j + 2][2] - sum[i + 2][j - 1][2] + sum[i - 1][j - 1][2]) / 9;
+		}
+	for (int i = 0; i < dim; i++) {
+		dst[RIDX(i, km, dim)] = avg2(dim, i, km, src);
+		dst[RIDX(i, 0, dim)] = avg2(dim, i, 0, src);
 	}
-	// for (i = 0; i < dim; i++)
-	// 	for (j = 0; j < dim; j++);
+	for (int j = 1; j < km; j++) {
+		dst[RIDX(0, j, dim)] = avg2(dim, 0, j, src);
+		dst[RIDX(km, j, dim)] = avg2(dim, km, j, src);
+	}
 }
 /*********************************************************************
  * register_smooth_functions - Register all of your different versions
@@ -233,7 +252,8 @@ void smooth_block_nofunc(int dim, pixel *src, pixel *dst) {
  *********************************************************************/
 
 void register_smooth_functions() {
-	add_smooth_function(&smooth_block_nofunc, smooth_descr);
+	add_smooth_function(&smooth_block_nofunc, smooth_block_nofunc_descr);
 	add_smooth_function(&naive_smooth, naive_smooth_descr);
+	add_smooth_function(&smooth, smooth_descr);
 	/* ... Register additional test functions here */
 }
