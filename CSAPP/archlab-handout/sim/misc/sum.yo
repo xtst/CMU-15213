@@ -24,15 +24,15 @@
 0x05c: 30f00000000000000000 |     irmovq    $0x0,%rax
 0x066:                      | loop:
 0x066: 6277                 |     andq   %rdi,%rdi
-0x068: 739c00000000000000   |     je     return
+0x068: 739000000000000000   |     je     return
 0x071: 50d70000000000000000 |     mrmovq  (%rdi),%r13
 0x07b: 60d0                 |     addq    %r13,%rax
-0x07d: 30fe0800000000000000 |     irmovq $0x8, %r14
-0x087: 60e7                 |     addq  %r14, %rdi 
-0x089: 50770000000000000000 |     mrmovq   (%rdi),%rdi
-0x093: 706600000000000000   |     jmp    loop
-0x09c:                      | return:    
-0x09c: 90                   |     ret
+                            |   #  irmovq $0x8, %r14
+                            |   #  addq  %r14, %rdi 
+0x07d: 50770800000000000000 |     mrmovq   0x8(%rdi),%rdi
+0x087: 706600000000000000   |     jmp    loop
+0x090:                      | return:    
+0x090: 90                   |     ret
                             | 
                             | 
                             |     

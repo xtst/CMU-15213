@@ -27,9 +27,9 @@ loop:
     je     return
     mrmovq  (%rdi),%r13
     addq    %r13,%rax
-    irmovq $0x8, %r14
-    addq  %r14, %rdi 
-    mrmovq   (%rdi),%rdi
+  #  irmovq $0x8, %r14
+  #  addq  %r14, %rdi 
+    mrmovq   0x8(%rdi),%rdi
     jmp    loop
 return:    
     ret
