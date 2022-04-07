@@ -133,3 +133,9 @@ return1:
   .pos 0x200 #设置栈地址
 stack:
 ```
+
+# Part B
+白给
+
+# Part C
+先做iaddq，再循环展开，优化优化
