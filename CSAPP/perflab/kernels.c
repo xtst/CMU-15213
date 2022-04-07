@@ -5,7 +5,8 @@
 #include "defs.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#define Min(a, b) ((a) < (b) ? (a) : (b))
+#define Max(a, b) ((a) > (b) ? (a) : (b))
 /*
  * Please fill in the following team struct
  */
@@ -78,8 +79,8 @@ void rotate(int dim, pixel *src, pixel *dst) {
  *********************************************************************/
 
 void register_rotate_functions() {
-	add_rotate_function(&naive_rotate, naive_rotate_descr);
-	add_rotate_function(&rotate_16, rotate_descr16);
+	// add_rotate_function(&naive_rotate, naive_rotate_descr);
+	// add_rotate_function(&rotate_16, rotate_descr16);
 	add_rotate_function(&rotate, rotate_descr8);
 	/* ... Register additional test functions here */
 }
@@ -141,6 +142,29 @@ static void assign_sum_to_pixel(pixel *current_pixel, pixel_sum sum) {
 /*
  * avg - Returns averaged pixel value at (i,j)
  */
+
+static pixel avg2(int dim, int i, int j, pixel *src) {
+	int ii, jj;
+	pixel_sum sum;
+	pixel current_pixel;
+
+	initialize_pixel_sum(&sum);
+	int low1 = Max(i - 1, 0), up1 = Min(i + 1, dim - 1), low2 = Max(j - 1, 0), up2 = Min(j + 1, dim - 1);
+	for (ii = low1; ii <= up1; ii++)
+		for (jj = low2; jj <= up2; jj++) {
+			sum.red += (int)(src[RIDX(ii, jj, dim)].red);
+			sum.green += (int)(src[RIDX(ii, jj, dim)].green);
+			sum.blue += (int)(src[RIDX(ii, jj, dim)].blue);
+			sum.num++;
+		}
+	// accumulate_sum(&sum, src[RIDX(ii, jj, dim)]);
+	current_pixel.red = (unsigned short)(sum.red / sum.num);
+	current_pixel.green = (unsigned short)(sum.green / sum.num);
+	current_pixel.blue = (unsigned short)(sum.blue / sum.num);
+	// assign_sum_to_pixel(&current_pixel, sum);
+	return current_pixel;
+}
+
 static pixel avg(int dim, int i, int j, pixel *src) {
 	int ii, jj;
 	pixel_sum sum;
@@ -173,14 +197,33 @@ void naive_smooth(int dim, pixel *src, pixel *dst) {
  * smooth - Your current working version of smooth.
  * IMPORTANT: This is the version you will be graded on
  */
-char smooth_descr[] = "smooth: Current working version";
-void smooth(int dim, pixel *src, pixel *dst) {
-	int i, j;
-
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim; j++) dst[RIDX(i, j, dim)] = avg(dim, i, j, src);
+char smooth_descr[] = "smooth: smooth with blocking and no function";
+void smooth_block_nofunc(int dim, pixel *src, pixel *dst) {
+	int num = dim >> 3;
+	for (int i = 0; i < num; i++) {
+		for (int j = 0; j < num; j++) {
+			int ifrom = (i << 3), jfrom = (j << 3);
+			for (int a = 0; a < 8; a++)
+				for (int b = 0; b < 8; b++) { dst[RIDX(ifrom + a, jfrom + b, dim)] = avg2(dim, ifrom + a, jfrom + b, src); }
+		}
+	}
+	// for (i = 0; i < dim; i++)
+	// 	for (j = 0; j < dim; j++);
 }
 
+char smooth_descr[] = "smooth: Current working version";
+void smooth_block_nofunc(int dim, pixel *src, pixel *dst) {
+	int num = dim >> 3;
+	for (int i = 0; i < num; i++) {
+		for (int j = 0; j < num; j++) {
+			int ifrom = (i << 3), jfrom = (j << 3);
+			for (int a = 0; a < 8; a++)
+				for (int b = 0; b < 8; b++) { dst[RIDX(ifrom + a, jfrom + b, dim)] = avg2(dim, ifrom + a, jfrom + b, src); }
+		}
+	}
+	// for (i = 0; i < dim; i++)
+	// 	for (j = 0; j < dim; j++);
+}
 /*********************************************************************
  * register_smooth_functions - Register all of your different versions
  *     of the smooth kernel with the driver by calling the
@@ -190,7 +233,7 @@ void smooth(int dim, pixel *src, pixel *dst) {
  *********************************************************************/
 
 void register_smooth_functions() {
-	add_smooth_function(&smooth, smooth_descr);
-	// add_smooth_function(&naive_smooth, naive_smooth_descr);
+	add_smooth_function(&smooth_block_nofunc, smooth_descr);
+	add_smooth_function(&naive_smooth, naive_smooth_descr);
 	/* ... Register additional test functions here */
 }
