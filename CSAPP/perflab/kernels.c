@@ -38,13 +38,37 @@ void naive_rotate(int dim, pixel *src, pixel *dst) {
  * rotate - Your current working version of rotate
  * IMPORTANT: This is the version you will be graded on
  */
-char rotate_descr[] = "rotate: Current working version";
-void rotate(int dim, pixel *src, pixel *dst) {
-	int i, j;
-	for (i = 0; i < dim; i++)
-		for (j = 0; j < dim; j++) dst[RIDX(dim - 1 - j, i, dim)] = src[RIDX(i, j, dim)];
+char rotate_descr16[] = "rotate: 16x16 per block";
+void rotate_16(int dim, pixel *src, pixel *dst) {
+	// int k = 0;
+	// for (int i = 0; i < dim; i++)
+	// for (int j = 0; j < dim; j++) dst[RIDX(dim - 1 - j, i, dim)] = src[k++];
+
+	int num = dim >> 4;
+	for (int i = 0; i < num; i++) {
+		for (int j = 0; j < num; j++) {
+			int ifrom = (i << 4), jfrom = (j << 4);
+			for (int a = 0; a < 16; a++)
+				for (int b = 0; b < 16; b++) { dst[RIDX(dim - 1 - jfrom - b, ifrom + a, dim)] = src[RIDX(ifrom + a, jfrom + b, dim)]; }
+		}
+	}
 }
 
+char rotate_descr8[] = "rotate: 8x8 per block";
+void rotate(int dim, pixel *src, pixel *dst) {
+	// int k = 0;
+	// for (int i = 0; i < dim; i++)
+	// for (int j = 0; j < dim; j++) dst[RIDX(dim - 1 - j, i, dim)] = src[k++];
+
+	int num = dim >> 3;
+	for (int i = 0; i < num; i++) {
+		for (int j = 0; j < num; j++) {
+			int ifrom = (i << 3), jfrom = (j << 3);
+			for (int a = 0; a < 8; a++)
+				for (int b = 0; b < 8; b++) { dst[RIDX(dim - 1 - jfrom - b, ifrom + a, dim)] = src[RIDX(ifrom + a, jfrom + b, dim)]; }
+		}
+	}
+}
 /*********************************************************************
  * register_rotate_functions - Register all of your different versions
  *     of the rotate kernel with the driver by calling the
@@ -54,8 +78,9 @@ void rotate(int dim, pixel *src, pixel *dst) {
  *********************************************************************/
 
 void register_rotate_functions() {
-	// add_rotate_function(&naive_rotate, naive_rotate_descr);
-	add_rotate_function(&rotate, rotate_descr);
+	add_rotate_function(&naive_rotate, naive_rotate_descr);
+	add_rotate_function(&rotate_16, rotate_descr16);
+	add_rotate_function(&rotate, rotate_descr8);
 	/* ... Register additional test functions here */
 }
 
@@ -84,7 +109,9 @@ static int max(int a, int b) { return (a > b ? a : b); }
  * initialize_pixel_sum - Initializes all fields of sum to 0
  */
 static void initialize_pixel_sum(pixel_sum *sum) {
-	sum->red = sum->green = sum->blue = 0;
+	sum->red = 0;
+	sum->green = 0;
+	sum->blue = 0;
 	sum->num = 0;
 	return;
 }
@@ -147,7 +174,12 @@ void naive_smooth(int dim, pixel *src, pixel *dst) {
  * IMPORTANT: This is the version you will be graded on
  */
 char smooth_descr[] = "smooth: Current working version";
-void smooth(int dim, pixel *src, pixel *dst) { naive_smooth(dim, src, dst); }
+void smooth(int dim, pixel *src, pixel *dst) {
+	int i, j;
+
+	for (i = 0; i < dim; i++)
+		for (j = 0; j < dim; j++) dst[RIDX(i, j, dim)] = avg(dim, i, j, src);
+}
 
 /*********************************************************************
  * register_smooth_functions - Register all of your different versions
