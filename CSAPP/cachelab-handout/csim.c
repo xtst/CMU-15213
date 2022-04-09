@@ -29,12 +29,13 @@ void change_to_bits(char *s, char *address) {
 
 void malloc_space(int s, int E, int b) {
 	int S = pow(2, s);
-	cache = malloc(S * sizeof(int **));
+	cache = (int ***)malloc(S * sizeof(int **));
 	for (int i = 0; i < S; i++) {
-		cache[i] = malloc(E * sizeof(int *));
+		cache[i] = (int **)malloc(E * sizeof(int *));
 		for (int j = 0; j < E; j++) {
-			cache[i][j] = malloc((pow(2, b) + mbit - s - b + 2) * sizeof(int));
-			cache[i][0] = 0;
+			cache[i][j] = (int *)malloc((mbit + 5) * sizeof(int));
+			// printf("====== %d %d %d\n", i, j, (mbit));
+			cache[i][j][0] = 0;
 		}
 	}
 }
@@ -70,7 +71,7 @@ int get_b(int s, int E, int b, char *address) {
 }
 int get_s(int s, int E, int b, char *address) {
 	int res = 0;
-	for (int i = mbit - b - s + 1; i <= mbit - b; i++) {
+	for (int i = mbit - b - s; i < mbit - b; i++) {
 		res <<= 1;
 		res |= (address[i] - '0') & 1;
 	}
@@ -88,24 +89,27 @@ void replace_cache(int s, int E, int b, int id, char *address, int s_now) {
 	int t = mbit - s - b, min_id = 1e9;
 	int E_now = 0;
 	for (int i = 0; i < E; i++) {
-		if (cache[s_now][E][0] < min_id) {
-			min_id = cache[s_now][E][0];
+		if (cache[s_now][i][0] < min_id) {
+			min_id = cache[s_now][i][0];
 			E_now = i;
 		}
 	}
 	if (cache[s_now][E_now][0] != 0) { eviction_cache(); }
 	cache[s_now][E_now][0] = id;
-	for (int i = 1; i <= t; i++) { cache[s_now][E][i] = address[mbit - t] - '0'; }
+	for (int i = 1; i <= t; i++) { cache[s_now][E_now][i] = address[i - 1] - '0'; }
 }
 
 void load_cache(int s, int E, int b, int id, char *address, int go_replace) {
 	int t = mbit - s - b;
 	int s_now = get_s(s, E, b, address);
+	debug(s_now);
 	for (int i = 0; i < E; i++) {
-		if (cache[s_now][E][0]) {
+		// debug(s_now);
+		// debug(i);
+		if (cache[s_now][i][0]) {
 			int flag = 1;
-			for (int i = 1; i <= t; i++) {
-				if (address[mbit - i] != cache[s_now][E][i] + '0') {
+			for (int j = 1; j <= t; j++) {
+				if (address[j - 1] - '0' != cache[s_now][i][j]) {
 					flag = 0;
 					break;
 				}
