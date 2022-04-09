@@ -7,7 +7,7 @@
 #define debug(x)                                                                                                                           \
 	if (debugMod) { printf("%s\t=%d\n", (#x), x); }
 #define sdebug(x)                                                                                                                          \
-	if (debugMod) { printf("%s\t=%s\n", (#x), x); }
+	if (debugMod) { printf("%s=%s\n", (#x), x); }
 
 int debugMod;
 int s, E, b;
@@ -33,7 +33,27 @@ int main(int argc, char **argv) {
 			debug(b);
 		}
 	}
+	FILE *fp = fopen(fileName, "r");
+	if (fp == NULL) {
+		printf("FileName Wrong\n");
+		return 0;
+	}
 
+	char option[10];
+	while (fscanf(fp, "%s", option) != -1) {
+		// sdebug(s);
+		char address[15], size[15], string[30];
+		// unsigned int addr;
+
+		fscanf(fp, "%s", string);
+		for (int i = 0; i < strlen(string); i++)
+			if (string[i] == ',') string[i] = ' ';
+
+		sscanf(string, "%s%s", address, size);
+		// debug(addr);
+		sdebug(address);
+		sdebug(size);
+	}
 	printSummary(hit, miss, eviction);
 	return 0;
 }
