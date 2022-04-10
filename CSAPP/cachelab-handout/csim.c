@@ -61,27 +61,12 @@ void eviction_cache() {
 	eviction++;
 	if (debug_mod) printf(" eviction");
 }
-int get_b(int s, int E, int b, char *address) {
-	int res = 0;
-	for (int i = b - 1; i >= 0; i--) {
-		res <<= 1;
-		res |= address[i] - '0';
-	}
-	return res;
-}
+
 int get_s(int s, int E, int b, char *address) {
 	int res = 0;
 	for (int i = mbit - b - s; i < mbit - b; i++) {
 		res <<= 1;
 		res |= (address[i] - '0') & 1;
-	}
-	return res;
-}
-int get_t(int s, int E, int b, char *address) {
-	int res = 0;
-	for (int i = mbit - 1; i >= s + b; i++) {
-		res <<= 1;
-		res |= address[i] - '0';
 	}
 	return res;
 }
