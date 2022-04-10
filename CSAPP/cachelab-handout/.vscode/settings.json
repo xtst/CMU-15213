@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "*.cpp": "cpp",
-        "cachelab.h": "c",
-        "*.tcc": "c",
-        "stdlib.h": "c",
-        "math.h": "c"
-    }
-}
