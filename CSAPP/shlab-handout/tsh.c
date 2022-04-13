@@ -163,15 +163,31 @@ void eval(char *cmdline) {
 
 	strcpy(buf, cmdline);
 	bg = parseline(buf, argv);
-	builtin_cmd(cmdline);
+	// builtin_cmd(arg);
 
 	if (argv[0] == NULL) return;
 
-	if (builtin_command(argv)) return;
+	if (builtin_cmd(argv)) return;
 
-	if ((pid = fork()) == 0) return;
-
-	if (execv(argv[0], argv + 1)) }
+	if ((pid = fork()) == 0) {
+		addjob(jobs, pid, bg, cmdline);
+		if (execve(argv[0], argv, environ) < 0) {
+			// printf("fuck you1");
+			printf("%s: Command not found", argv[0]);
+			return;
+		}
+	}
+	if (!bg) {
+		printf("fuck you1");
+		int status;
+		if (waitpid(pid, &status, 0) < 0) { unix_error("waitfg: waitpid error"); }
+	} else {
+		printf("fuck you2");
+		struct job_t *job_now = getjobpid(jobs, pid);
+		if (job_now == NULL) puts("fq");
+		printf("[%d] (%d) %s", job_now->jid, job_now->pid, job_now->cmdline);
+	}
+}
 
 /*
  * parseline - Parse the command line and build the argv array.
@@ -229,7 +245,24 @@ int parseline(const char *cmdline, char **argv) {
  * builtin_cmd - If the user has typed a built-in command then execute
  *    it immediately.
  */
-int builtin_cmd(char **argv) { return 0; /* not a builtin command */ }
+int builtin_cmd(char **argv) {
+	// if (!strcmp(argv[0], "&") == 0) { return 1; }
+	if (strcmp(argv[0], "quit") == 0) { exit(0); }
+	// if (strcmp(argv[0], "jobs") == 0) {
+	// 	listjobs(jobs);
+	// 	return 1;
+	// }
+	// if (strcmp(argv[0], "bg") == 0 || strcmp(argv[0], "fg") == 0) {
+	// 	do_bgfg(argv);
+	// 	return 1;
+	// }
+	// if (strcmp(argv[0], "kill") == 0) {
+	//     deletejob()
+	// 	listjobs(jobs);
+	// 	return 1;
+	// }
+	return 0; /* not a builtin command */
+}
 
 /*
  * do_bgfg - Execute the builtin bg and fg commands
