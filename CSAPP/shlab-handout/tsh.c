@@ -161,6 +161,7 @@ void eval(char *cmdline) {
 	int bg;
 	pid_t pid;
 
+	memset(jobs, 0, sizeof(jobs));
 	strcpy(buf, cmdline);
 	bg = parseline(buf, argv);
 	// builtin_cmd(arg);
@@ -169,26 +170,37 @@ void eval(char *cmdline) {
 
 	if (builtin_cmd(argv)) return;
 
+	sigset_t mask_all, mask_one, prev_one;
+	sigfillset(&mask_all);
+	sigemptyset(&mask_one);
+	sigaddset(&mask_one, SIGCHLD);
+	signal(SIGCHLD, sigchld_handler);
+
+	sigprocmask(SIG_BLOCK, &mask_one, &prev_one);
 	if ((pid = fork()) == 0) {
-		addjob(jobs, pid, bg, cmdline);
+		setpgid(0, 0);
+		sigprocmask(SIG_SETMASK, &prev_one, NULL);
 		if (execve(argv[0], argv, environ) < 0) {
-			// printf("fuck you1");
 			printf("%s: Command not found", argv[0]);
-			return;
+			exit(0);
 		}
+		exit(0);
 	}
+	sigprocmask(SIG_BLOCK, &mask_all, NULL);
+	addjob(jobs, pid, bg, cmdline);
 	if (!bg) {
-		printf("fuck you1");
+		// printf("fuck you1");
 		int status;
 		if (waitpid(pid, &status, 0) < 0) { unix_error("waitfg: waitpid error"); }
+		sigprocmask(SIG_SETMASK, &prev_one, NULL);
 	} else {
-		printf("fuck you2");
 		struct job_t *job_now = getjobpid(jobs, pid);
-		if (job_now == NULL) puts("fq");
-		printf("[%d] (%d) %s", job_now->jid, job_now->pid, job_now->cmdline);
+		// puts("fq");
+		printf("fuck you:[%d] (%d) %s", job_now->jid, job_now->pid, job_now->cmdline);
+		sigprocmask(SIG_SETMASK, &prev_one, NULL);
 	}
 }
-
+//./myspin 2 &
 /*
  * parseline - Parse the command line and build the argv array.
  *
@@ -248,10 +260,10 @@ int parseline(const char *cmdline, char **argv) {
 int builtin_cmd(char **argv) {
 	// if (!strcmp(argv[0], "&") == 0) { return 1; }
 	if (strcmp(argv[0], "quit") == 0) { exit(0); }
-	// if (strcmp(argv[0], "jobs") == 0) {
-	// 	listjobs(jobs);
-	// 	return 1;
-	// }
+	if (strcmp(argv[0], "jobs") == 0) {
+		listjobs(jobs);
+		return 1;
+	}
 	// if (strcmp(argv[0], "bg") == 0 || strcmp(argv[0], "fg") == 0) {
 	// 	do_bgfg(argv);
 	// 	return 1;
@@ -285,7 +297,20 @@ void waitfg(pid_t pid) { return; }
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.
  */
-void sigchld_handler(int sig) { return; }
+void sigchld_handler(int sig) {
+	int old_errno = errno;
+	sigset_t mask_all, prev_all;
+	pid_t pid;
+	sigfillset(&mask_all);
+	while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
+		sigprocmask(SIG_BLOCK, &mask_all, &prev_all);
+		deletejob(jobs, pid);
+		sigprocmask(SIG_SETMASK, &prev_all, NULL);
+	}
+	if (errno != ECHILD) unix_error("waitpid error");
+	errno = old_errno;
+	return;
+}
 
 /*
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
@@ -363,6 +388,7 @@ int deletejob(struct job_t *jobs, pid_t pid) {
 	for (i = 0; i < MAXJOBS; i++) {
 		if (jobs[i].pid == pid) {
 			clearjob(&jobs[i]);
+			// jobs[i].state = ST;
 			nextjid = maxjid(jobs) + 1;
 			return 1;
 		}
