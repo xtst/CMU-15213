@@ -170,7 +170,8 @@ void eval(char *cmdline) {
 	if (builtin_command(argv)) return;
 
 	if ((pid = fork()) == 0) return;
-}
+
+	if (execv(argv[0], argv + 1)) }
 
 /*
  * parseline - Parse the command line and build the argv array.
