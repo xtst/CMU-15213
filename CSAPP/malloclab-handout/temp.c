@@ -45,12 +45,10 @@ team_t team = {
 /*
  * mm_init - initialize the malloc package.
  */
-int *list_node;
+int *list_node[10];
 int mm_init(void) {
-	// void *p = mem_heap_lo();
-	// list_node = mem_sbrk(sizeof(int) * 32);
-	// for (int i = 0; i < 32; i++) list_node[i] = 0;
-	// if (((int)p & 7) == 0) exit(1);
+	void *p = mem_heap_lo();
+	if (((int)p & 7) != 0) printf("fuck you");
 	// void *p = mem_sbrk(sizeof(int) *);
 	return 0;
 }
@@ -59,20 +57,19 @@ int mm_init(void) {
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
-int high_size(size_t x) {
+int high_size(int x) {
 	int p = 1;
-	while (p < (int)x) { p <<= 1; }
+	while (p < x) { p >>= 1; }
 	return p;
 }
 void *mm_malloc(size_t size) {
-	// int newsize = ALIGN(size);
-	int newsize = high_size(ALIGN(size));
-	void *p = mem_sbrk(newsize);
+	int newsize = ALIGN(size + SIZE_T_SIZE);
+	void *p = mem_sbrk(newsize + 2);
 	if (p == (void *)-1)
 		return NULL;
 	else {
-		// *(size_t *)p = size;
-		return (void *)((char *)p);
+		*(size_t *)p = size;
+		return (void *)((char *)p + SIZE_T_SIZE);
 	}
 }
 
@@ -97,3 +94,4 @@ void *mm_realloc(void *ptr, size_t size) {
 	mm_free(oldptr);
 	return newptr;
 }
+// int main() {}
