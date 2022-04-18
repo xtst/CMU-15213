@@ -1,6 +1,6 @@
 # ShellLab
 大受裨益
-```
+```cpp
 /*
  * tsh - A tiny shell program with job control
  *
