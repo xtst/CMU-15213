@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "*.cpp": "cpp",
-        "memlib.h": "c",
-        "mm.h": "c"
-    }
-}

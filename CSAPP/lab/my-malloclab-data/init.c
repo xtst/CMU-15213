@@ -42,11 +42,6 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-int high_size(size_t x) {
-	int p = 1;
-	while (p < (int)x) { p <<= 1; }
-	return p;
-}
 /*
  * mm_init - initialize the malloc package.
  */
