@@ -48,8 +48,8 @@ team_t team = {
 int *list_node;
 int mm_init(void) {
 	// void *p = mem_heap_lo();
-	// list_node = mem_sbrk(sizeof(int) * 32);
-	// for (int i = 0; i < 32; i++) list_node[i] = 0;
+	list_node = mem_sbrk(sizeof(int) * 32);
+	for (int i = 0; i < 32; i++) list_node[i] = 0;
 	// if (((int)p & 7) == 0) exit(1);
 	// void *p = mem_sbrk(sizeof(int) *);
 	return 0;
@@ -71,7 +71,7 @@ void *mm_malloc(size_t size) {
 	if (p == (void *)-1)
 		return NULL;
 	else {
-		// *(size_t *)p = size;
+		*(size_t *)p = size;
 		return (void *)((char *)p);
 	}
 }
@@ -79,7 +79,7 @@ void *mm_malloc(size_t size) {
 /*
  * mm_free - Freeing a block does nothing.
  */
-void mm_free(void *ptr) {}
+void mm_free(void *ptr) { int size = }
 
 /*
  * mm_realloc - Implemented simply in terms of mm_malloc and mm_free
