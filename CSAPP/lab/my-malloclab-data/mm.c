@@ -42,9 +42,12 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
-size_t high_size(size_t x) {
+size_t high_size(size_t x, int *times) {
 	size_t p = 1;
-	while (p < (int)x) { p <<= 1; }
+	while (p < (int)x) {
+		p <<= 1;
+		times++;
+	}
 	return p;
 }
 /*
@@ -53,8 +56,8 @@ size_t high_size(size_t x) {
 int *list_node;
 int mm_init(void) {
 	// void *p = mem_heap_lo();
-	// list_node = mem_sbrk(sizeof(int) * 32);
-	// for (int i = 0; i < 32; i++) list_node[i] = 0;
+	list_node = mem_sbrk(sizeof(size_t) * 32);
+	for (int i = 0; i < 32; i++) list_node[i] = 0;
 	// if (((int)p & 7) == 0) exit(1);
 	// void *p = mem_sbrk(sizeof(int) *);
 	return 0;
@@ -65,7 +68,10 @@ int mm_init(void) {
  *     Always allocate a block whose size is a multiple of the alignment.
  */
 void *mm_malloc(size_t size) {
-	size_t newsize = high_size(ALIGN(size + SIZE_T_SIZE));
+	int times = 0;
+	size_t newsize = high_size(ALIGN(size + SIZE_T_SIZE), &times);
+	if (times >= 32) exit(1);
+	if (list_node[times] != NULL) { list_node[times] = *((size_t *)list_node[times]); }
 	void *p = mem_sbrk(newsize);
 	if (p == (void *)-1)
 		return NULL;
