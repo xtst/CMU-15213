@@ -2,6 +2,10 @@
     "files.associations": {
         "*.cpp": "cpp",
         "memlib.h": "c",
-        "mm.h": "c"
+        "mm.h": "c",
+        "istream": "c",
+        "ostream": "c",
+        "shared_mutex": "c",
+        "regex": "c"
     }
 }
