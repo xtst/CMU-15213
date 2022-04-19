@@ -46,18 +46,18 @@ size_t high_size(size_t x, int *times) {
 	size_t p = 1;
 	while (p < (int)x) {
 		p <<= 1;
-		times++;
+		(*times)++;
 	}
 	return p;
 }
 /*
  * mm_init - initialize the malloc package.
  */
-size_t *list_node;
+void **list_node;
 int mm_init(void) {
 	// void *p = mem_heap_lo();
-	list_node = (size_t)mem_sbrk(sizeof(size_t) * 32);
-	for (int i = 0; i < 32; i++) list_node[i] = 0;
+	list_node = mem_sbrk(sizeof(void *) * 32);
+	for (int i = 0; i < 32; i++) list_node[i] = NULL;
 	// if (((int)p & 7) == 0) exit(1);
 	// void *p = mem_sbrk(sizeof(int) *);
 	return 0;
@@ -72,15 +72,15 @@ void *mm_malloc(size_t size) {
 	size_t newsize = high_size(ALIGN(size + SIZE_T_SIZE), &times);
 	// if (times >= 32) exit(1);
 	if (list_node[times] != NULL) {
-		size_t res = list_node[times] + SIZE_T_SIZE;
-		list_node[times] = (size_t *)(*((size_t *)list_node[times]));
-		return (void *)res;
+		void *res = list_node[times];
+		list_node[times] = &(*((size_t *)(list_node[times])));
+		return (void *)((char *)res + SIZE_T_SIZE);
 	}
 	void *p = mem_sbrk(newsize);
 	if (p == (void *)-1)
 		return NULL;
 	else {
-		*(size_t *)p = newsize;
+		*((size_t *)p) = newsize;
 		return (void *)((char *)p + SIZE_T_SIZE);
 	}
 }
@@ -89,16 +89,16 @@ void *mm_malloc(size_t size) {
  * mm_free - Freeing a block does nothing.
  */
 void mm_free(void *ptr) {
-	size_t size = *((size_t *)(ptr - SIZE_T_SIZE));
-	size_t real_position = (size_t)(ptr - SIZE_T_SIZE);
+	size_t size = *((size_t *)((char *)ptr - SIZE_T_SIZE));
+	void *real_position = (void *)((char *)ptr - SIZE_T_SIZE);
 	int times = 0;
-	high_size(size, times);
-	if (list_node[times] == 0)
-		list_node[times] = ptr - SIZE_T_SIZE;
-	else {
-		size_t next = list_node[times];
+	high_size(size, &times);
+	if (list_node[times] == NULL)
 		list_node[times] = real_position;
-		*((size_t *)(ptr - SIZE_T_SIZE)) = next;
+	else {
+		void *next = list_node[times];
+		list_node[times] = real_position;
+		*((size_t *)(real_position)) = (size_t)next;
 	}
 }
 
