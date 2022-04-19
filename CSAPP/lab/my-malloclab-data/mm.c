@@ -24,11 +24,11 @@
  ********************************************************/
 team_t team = {
 	/* Team name */
-	"ateam",
+	"santo",
 	/* First member's full name */
-	"Harry Bovik",
+	"santo santo",
 	/* First member's email address */
-	"bovik@cs.cmu.edu",
+	"santo@santo.com",
 	/* Second member's full name (leave blank if none) */
 	"",
 	/* Second member's email address (leave blank if none) */
@@ -57,9 +57,9 @@ void **list_node;
 int mm_init(void) {
 	// void *p = mem_heap_lo();
 	list_node = mem_sbrk(sizeof(void *) * 32);
+	if (list_node == ((void *)-1)) exit(-1);
 	for (int i = 0; i < 32; i++) list_node[i] = NULL;
 	// if (((int)p & 7) == 0) exit(1);
-	// void *p = mem_sbrk(sizeof(int) *);
 	return 0;
 }
 
@@ -69,19 +69,20 @@ int mm_init(void) {
  */
 void *mm_malloc(size_t size) {
 	int times = 0;
-	size_t newsize = high_size(ALIGN(size + SIZE_T_SIZE), &times);
-	// if ((1 << (times)) < newsize) exit(1);
+	size_t new_size = high_size(ALIGN(size + SIZE_T_SIZE), &times);
+	// if ((1 << (times)) < new_size) exit(1);
+	if (times >= 32) exit(-1);
 	if (list_node[times] != NULL) {
 		void *res = list_node[times];
 		list_node[times] = (void *)(*((size_t *)(list_node[times])));
-		*((size_t *)res) = newsize;
+		*((size_t *)res) = new_size;
 		return (void *)((char *)res + SIZE_T_SIZE);
 	}
-	void *p = mem_sbrk(newsize);
+	void *p = mem_sbrk(new_size);
 	if (p == (void *)-1)
 		return NULL;
 	else {
-		*((size_t *)p) = newsize;
+		*((size_t *)p) = new_size;
 		return (void *)((char *)p + SIZE_T_SIZE);
 	}
 }
@@ -108,6 +109,10 @@ void mm_free(void *ptr) {
  * mm_realloc - Implemented simply in terms of mm_malloc and mm_free
  */
 void *mm_realloc(void *ptr, size_t size) {
+	size_t old_size = *((size_t *)((char *)ptr - SIZE_T_SIZE));
+	// size_t old_expanded_size = high_size(ALIGN(size + SIZE_T_SIZE), &times);
+	if (size <= old_size - SIZE_T_SIZE) return ptr;
+
 	void *oldptr = ptr;
 	void *newptr;
 	size_t copySize;
