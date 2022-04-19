@@ -70,10 +70,11 @@ int mm_init(void) {
 void *mm_malloc(size_t size) {
 	int times = 0;
 	size_t newsize = high_size(ALIGN(size + SIZE_T_SIZE), &times);
-	// if (times >= 32) exit(1);
+	// if ((1 << (times)) < newsize) exit(1);
 	if (list_node[times] != NULL) {
 		void *res = list_node[times];
-		list_node[times] = &(*((size_t *)(list_node[times])));
+		list_node[times] = (void *)(*((size_t *)(list_node[times])));
+		*((size_t *)res) = newsize;
 		return (void *)((char *)res + SIZE_T_SIZE);
 	}
 	void *p = mem_sbrk(newsize);
@@ -93,9 +94,10 @@ void mm_free(void *ptr) {
 	void *real_position = (void *)((char *)ptr - SIZE_T_SIZE);
 	int times = 0;
 	high_size(size, &times);
-	if (list_node[times] == NULL)
+	if (list_node[times] == NULL) {
 		list_node[times] = real_position;
-	else {
+		*((size_t *)real_position) = 0;
+	} else {
 		void *next = list_node[times];
 		list_node[times] = real_position;
 		*((size_t *)(real_position)) = (size_t)next;
