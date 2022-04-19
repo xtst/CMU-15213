@@ -18,7 +18,7 @@
 #include "memlib.h"
 #include "mm.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
@@ -45,7 +45,7 @@ team_t team = {
 
 size_t high_size(size_t x, int *times) {
 	size_t p = 1;
-	while (p < (int)x) {
+	while (p < x) {
 		p <<= 1;
 		(*times)++;
 	}
@@ -68,12 +68,13 @@ int mm_init(void) {
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
-const int bigger = 0;
+int bigger = 5, first_in, flag = 0;
 void *mm_malloc(size_t size) {
+	// if (!flag && size == 5580) {}
 	int times = 0;
 	size_t new_size = high_size(ALIGN(size + SIZE_T_SIZE), &times);
 	// if ((1 << (times)) < new_size) exit(1);
-	if (times >= 32) exit(-1);
+	// if (times >= 32) exit(-1);
 
 	if (list_node[times] != NULL) {
 		void *res = list_node[times];
@@ -81,6 +82,30 @@ void *mm_malloc(size_t size) {
 		*((size_t *)res) = new_size;
 		return (void *)((char *)res + SIZE_T_SIZE);
 	}
+
+	// size_t temp_size = new_size;
+	// if (mem_heapsize() > (1 * (1 << 11))) bigger = 15;
+	if (times >= 1)
+		for (int i = times + 1; i <= MIN(times + bigger, 31); i++) {
+			if (list_node[i] != NULL) {
+				void *res = list_node[i];
+				list_node[i] = (void *)(*((size_t *)(list_node[i])));
+				*((size_t *)res) = new_size;
+
+				// void *pos = res;
+				for (int j = times; j < i; j++) {
+					size_t now_size = (new_size) << (j - times);
+					void *tmp_ptr = ((char *)res) + now_size;
+					*((size_t *)tmp_ptr) = now_size;
+					mm_free((void *)((char *)tmp_ptr + SIZE_T_SIZE));
+				}
+
+				return (void *)((char *)res + SIZE_T_SIZE);
+			}
+			// temp_size <<= 1;
+		}
+	// new_size = temp;
+
 	void *p = mem_sbrk(new_size);
 	if (p == (void *)-1)
 		return NULL;
