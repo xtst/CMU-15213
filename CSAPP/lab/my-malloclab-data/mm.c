@@ -18,6 +18,7 @@
 #include "memlib.h"
 #include "mm.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 /*********************************************************
  * NOTE TO STUDENTS: Before you do anything else, please
  * provide your team information in the following struct.
@@ -67,11 +68,13 @@ int mm_init(void) {
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
+const int bigger = 0;
 void *mm_malloc(size_t size) {
 	int times = 0;
 	size_t new_size = high_size(ALIGN(size + SIZE_T_SIZE), &times);
 	// if ((1 << (times)) < new_size) exit(1);
 	if (times >= 32) exit(-1);
+
 	if (list_node[times] != NULL) {
 		void *res = list_node[times];
 		list_node[times] = (void *)(*((size_t *)(list_node[times])));
@@ -95,6 +98,7 @@ void mm_free(void *ptr) {
 	void *real_position = (void *)((char *)ptr - SIZE_T_SIZE);
 	int times = 0;
 	high_size(size, &times);
+
 	if (list_node[times] == NULL) {
 		list_node[times] = real_position;
 		*((size_t *)real_position) = 0;
@@ -112,7 +116,6 @@ void *mm_realloc(void *ptr, size_t size) {
 	size_t old_size = *((size_t *)((char *)ptr - SIZE_T_SIZE));
 	// size_t old_expanded_size = high_size(ALIGN(size + SIZE_T_SIZE), &times);
 	if (size <= old_size - SIZE_T_SIZE) return ptr;
-
 	void *oldptr = ptr;
 	void *newptr;
 	size_t copySize;
