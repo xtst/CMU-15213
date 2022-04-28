@@ -10,7 +10,7 @@
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 
 int main(int argc, char **argv) {
-	int listenfd, connfd;
+	int listenfd;
 	char hostname[MAXLINE], port[MAXLINE];
 	socklen_t clientlen;
 	struct sockaddr_storage clientaddr;
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 	listenfd = Open_listenfd(argv[1]);
 	while (1) {
 		clientlen = sizeof(clientaddr);
-		connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
+		int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
 		Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
 		printf("Accepted connection from (%s, %s)\n", hostname, port);
 		doit(connfd);  // line:netp:tiny:doit
@@ -40,24 +40,22 @@ void doit(int fd) {
 
 	/* Read request line and headers */
 	Rio_readinitb(&rio, fd);
-	if (Rio_readlineb(&rio, buf, MAXLINE) == 0) // line:netp:doit:readrequest
-		return;
+	Rio_readlineb(&rio, buf, MAXLINE);
 	// printf("fufufufufuuf  %s", buf);
 	// line:netp:doit:parserequest
 	// printf("asdfadf  %s", method);
 
-	sscanf(buf, "%s %s %s", method, url, version);
-	if (strcasecmp(method, "GET") != 0) { // line:netp:doit:beginrequesterr
-		clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
-		return;
-	}
 	// line:netp:doit:endrequesterr
 
 	/* Parse URI from GET request */
 	// printf("clclcllc0:  %s\n\n", clientRequest);
 	parse_uri(buf, method, url, version, host, filename);			// line:netp:doit:staticcheck
 	read_requesthdrs(&rio, host, filename, version, clientRequest); // line:netp:doit:readrequesthdrs
-	// if (stat(filename, &sbuf) < 0) {			// line:netp:doit:beginnotfound
+
+	if (strcasecmp(method, "GET") != 0) { // line:netp:doit:beginrequesterr
+		clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
+		return;
+	} // if (stat(filename, &sbuf) < 0) {			// line:netp:doit:beginnotfound
 	// 	clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
 	// 	return;
 	// } // line:netp:doit:endnotfound
@@ -120,7 +118,7 @@ void parse_uri(char *buf, char *method, char *url, char *version, char *host, ch
 	char *pos = strstr(version, "1.1");
 	if (pos != NULL) { pos[2] = '0'; }
 	strncpy(host, domain_begin, domain_last - domain_begin + 1);
-	strncpy(filename, domain_last + 1, position_last - domain_last);
+	strcpy(filename, domain_last + 1);
 	// printf("-=-=- host: %s\nfilename: %s\n", host, filename);
 }
 

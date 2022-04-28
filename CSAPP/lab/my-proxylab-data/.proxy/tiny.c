@@ -53,8 +53,7 @@ void doit(int fd) {
 
 	/* Read request line and headers */
 	Rio_readinitb(&rio, fd);
-	if (!Rio_readlineb(&rio, buf, MAXLINE)) // line:netp:doit:readrequest
-		return;
+	Rio_readlineb(&rio, buf, MAXLINE);
 	printf("%s", buf);
 	sscanf(buf, "%s %s %s", method, uri, version); // line:netp:doit:parserequest
 	if (strcasecmp(method, "GET")) {			   // line:netp:doit:beginrequesterr
