@@ -1,17 +1,16 @@
+/* $begin tinymain */
+/*
+ * tiny.c - A simple, iterative HTTP/1.0 Web server that uses the
+ *     GET method to serve static and dynamic content.
+ *
+ * Updated 11/2019 droh
+ *   - Fixed sprintf() aliasing issue in serve_static(), and clienterror().
+ */
 #include "csapp.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-/* Recommended max cache and object sizes */
-#define MAX_CACHE_SIZE 1049000
-#define MAX_OBJECT_SIZE 102400
-#define MAX_STRING_SIZE 12345
-/* You won't lose style points for including this long line in your code */
-static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
-char clientRequest[MAXLINE];
+
 void doit(int fd);
-void read_requesthdrs(rio_t *rp, char *host);
-int parse_uri(char *buf, char *host, char *position);
+void read_requesthdrs(rio_t *rp);
+int parse_uri(char *uri, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
@@ -49,60 +48,41 @@ void doit(int fd) {
 	int is_static;
 	struct stat sbuf;
 	char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-	char filename[MAXLINE], position[MAXLINE], host[MAXLINE], cgiargs[MAXLINE];
+	char filename[MAXLINE], cgiargs[MAXLINE];
 	rio_t rio;
 
 	/* Read request line and headers */
 	Rio_readinitb(&rio, fd);
 	if (!Rio_readlineb(&rio, buf, MAXLINE)) // line:netp:doit:readrequest
 		return;
-	// printf("fufufufufuuf  %s", buf);
+	printf("%s", buf);
 	sscanf(buf, "%s %s %s", method, uri, version); // line:netp:doit:parserequest
-	// printf("asdfadf  %s", method);
-	if (strcasecmp(method, "GET") != 0) { // line:netp:doit:beginrequesterr
+	if (strcasecmp(method, "GET")) {			   // line:netp:doit:beginrequesterr
 		clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
 		return;
-	}
-	// line:netp:doit:endrequesterr
+	}						// line:netp:doit:endrequesterr
+	read_requesthdrs(&rio); // line:netp:doit:readrequesthdrs
 
 	/* Parse URI from GET request */
-	printf("clclcllc0:  %s\n\n", clientRequest);
-	is_static = parse_uri(buf, host, position); // line:netp:doit:staticcheck
-	read_requesthdrs(&rio, host);				// line:netp:doit:readrequesthdrs
-	// if (stat(filename, &sbuf) < 0) {			// line:netp:doit:beginnotfound
-	// 	clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
-	// 	return;
-	// } // line:netp:doit:endnotfound
+	is_static = parse_uri(uri, filename, cgiargs); // line:netp:doit:staticcheck
+	if (stat(filename, &sbuf) < 0) {			   // line:netp:doit:beginnotfound
+		clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
+		return;
+	} // line:netp:doit:endnotfound
 
-	char *colon = strchr(host, ':');
-	char host_name[MAXLINE], port[MAXLINE];
-	if (colon != NULL) strncpy(host_name, host, colon - host);
-	if (colon != NULL) strncpy(port, colon + 1, strlen(host) - (colon - host + 1));
-	printf("435335345  hostname:%s\nport:%s\n", host_name, port);
-	char response[MAXLINE];
-
-	printf("clclcllc2:  %s\n\n", clientRequest);
-	int clientfd = open_clientfd(host_name, port);
-	rio_t client;
-	printf("clclcllc1:  %s\n\n", clientRequest);
-	rio_readinitb(&client, clientfd);
-	rio_writen(clientfd, clientRequest, strlen(clientRequest));
-	int n;
-	while ((n = Rio_readnb(&rio, response, MAXLINE)) != 0) { Rio_writen(fd, response, n); }
-
-	// if (is_static) {												 /* Serve static content */
-	// 	if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { // line:netp:doit:readable
-	// 		clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
-	// 		return;
-	// 	}
-	// 	serve_static(fd, filename, sbuf.st_size);					 // line:netp:doit:servestatic
-	// } else {														 /* Serve dynamic content */
-	// 	if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { // line:netp:doit:executable
-	// 		clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't run the CGI program");
-	// 		return;
-	// 	}
-	// 	serve_dynamic(fd, filename, cgiargs); // line:netp:doit:servedynamic
-	// }
+	if (is_static) {												 /* Serve static content */
+		if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) { // line:netp:doit:readable
+			clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't read the file");
+			return;
+		}
+		serve_static(fd, filename, sbuf.st_size);					 // line:netp:doit:servestatic
+	} else {														 /* Serve dynamic content */
+		if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) { // line:netp:doit:executable
+			clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't run the CGI program");
+			return;
+		}
+		serve_dynamic(fd, filename, cgiargs); // line:netp:doit:servedynamic
+	}
 }
 /* $end doit */
 
@@ -110,30 +90,15 @@ void doit(int fd) {
  * read_requesthdrs - read HTTP request headers
  */
 /* $begin read_requesthdrs */
-void read_requesthdrs(rio_t *rp, char *host) {
+void read_requesthdrs(rio_t *rp) {
 	char buf[MAXLINE];
 
 	Rio_readlineb(rp, buf, MAXLINE);
 	printf("%s", buf);
-	int flag_host = 0, flag_user_agent = 0, flag_connection = 0, flag_proxy_connection = 0;
 	while (strcmp(buf, "\r\n")) { // line:netp:readhdrs:checkterm
 		Rio_readlineb(rp, buf, MAXLINE);
-		strcat(clientRequest, buf);
-		if (strstr(buf, "Host") != NULL) { flag_host = 1; }
-		if (strstr(buf, "User-Agent") != NULL) { flag_user_agent = 1; }
-		if (strstr(buf, "Connection") != NULL) { flag_connection = 1; }
-		if (strstr(buf, "Proxy-Connection") != NULL) { flag_proxy_connection = 1; }
 		printf("%s", buf);
 	}
-	if (!flag_host) {
-		char s[MAXLINE];
-		sprintf(s, "Host: %s\r\n", host);
-		strcat(clientRequest, s);
-		// strcat(clientRequest, host);
-	}
-	if (!flag_user_agent) strcat(clientRequest, user_agent_hdr);
-	if (!flag_connection) strcat(clientRequest, "Connection: close");
-	if (!flag_proxy_connection) strcat(clientRequest, "Proxy-Connection: close");
 	return;
 }
 /* $end read_requesthdrs */
@@ -143,19 +108,27 @@ void read_requesthdrs(rio_t *rp, char *host) {
  *             return 0 if dynamic content, 1 if static
  */
 /* $begin parse_uri */
-int parse_uri(char *buf, char *host, char *position) {
-	char *domain_begin = strchr(buf, '/') + 2;
-	char *domain_last = strchr(domain_begin, '/') - 1;
-	char *position_last = strchr(domain_last + 1, ' ') - 1;
-	char *pos = strstr(buf, "1.1");
-	if (pos != NULL) { pos[2] = '0'; }
-	strncpy(host, domain_begin, domain_last - domain_begin + 1);
-	strncpy(position, domain_last + 1, position_last - domain_last);
-	printf("-=-=- host: %s\nposition: %s\n", host, position);
-	if (strchr(buf, '?') != NULL)
-		return 0;
-	else
+int parse_uri(char *uri, char *filename, char *cgiargs) {
+	char *ptr;
+
+	if (!strstr(uri, "cgi-bin")) { /* Static content */ // line:netp:parseuri:isstatic
+		strcpy(cgiargs, "");							// line:netp:parseuri:clearcgi
+		strcpy(filename, ".");							// line:netp:parseuri:beginconvert1
+		strcat(filename, uri);							// line:netp:parseuri:endconvert1
+		if (uri[strlen(uri) - 1] == '/')				// line:netp:parseuri:slashcheck
+			strcat(filename, "home.html");				// line:netp:parseuri:appenddefault
 		return 1;
+	} else { /* Dynamic content */ // line:netp:parseuri:isdynamic
+		ptr = index(uri, '?');	   // line:netp:parseuri:beginextract
+		if (ptr) {
+			strcpy(cgiargs, ptr + 1);
+			*ptr = '\0';
+		} else
+			strcpy(cgiargs, ""); // line:netp:parseuri:endextract
+		strcpy(filename, ".");	 // line:netp:parseuri:beginconvert2
+		strcat(filename, uri);	 // line:netp:parseuri:endconvert2
+		return 0;
+	}
 }
 /* $end parse_uri */
 
@@ -253,3 +226,4 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
 	sprintf(buf, "<hr><em>The Tiny Web server</em>\r\n");
 	Rio_writen(fd, buf, strlen(buf));
 }
+/* $end clienterror */
