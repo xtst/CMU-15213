@@ -1,4 +1,5 @@
 #include "csapp.h"
+#include "sbuf.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
