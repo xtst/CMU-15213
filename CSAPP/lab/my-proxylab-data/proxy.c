@@ -13,7 +13,7 @@
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 sbuf_t sbuf;
-sem_t mutex1;
+sem_t mutex1, mutex2;
 struct Node {
 	char s[MAX_STRING_SIZE];
 	char *content;
