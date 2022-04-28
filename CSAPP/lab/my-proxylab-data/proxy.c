@@ -125,7 +125,7 @@ int parse_uri(char *buf, char *host, char *position) {
 	char *domain_last = strchr(domain_begin, '/') - 1;
 	char *position_last = strchr(domain_last + 1, ' ') - 1;
 	char *pos = strstr(buf, "1.1");
-	if (pos != NULL) { pos + 2 = '0'; }
+	if (pos != NULL) { pos[2] = '0'; }
 	strncpy(host, domain_begin, domain_last - domain_begin + 1);
 	strncpy(position, domain_last + 1, position_last - domain_last);
 	printf("host: %s\nposition: %s\n", host, position);
