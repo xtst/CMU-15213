@@ -3,18 +3,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define NTHREADS 4
+#define SBUFSIZE 16
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
 #define MAX_STRING_SIZE 12345
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
+sbuf_t sbuf;
+
+void *thread(void *vargp) {
+	Pthread_detach(pthread_self());
+	while (1) {
+		int connfd = sbuf_remove(&sbuf); /* Remove connfd from buffer */ // line:conc:pre:removeconnfd
+		doit(connfd);
+		Close(connfd);
+	}
+}
 
 int main(int argc, char **argv) {
-	int listenfd;
 	char hostname[MAXLINE], port[MAXLINE];
 	socklen_t clientlen;
 	struct sockaddr_storage clientaddr;
+	int i, listenfd, connfd;
+	// socklen_t clientlen;
+	pthread_t tid;
 
 	/* Check command line args */
 	if (argc != 2) {
@@ -22,14 +36,24 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+	sbuf_init(&sbuf, SBUFSIZE);								   // line:conc:pre:initsbuf
+	for (i = 0; i < NTHREADS; i++) /* Create worker threads */ // line:conc:pre:begincreate
+		Pthread_create(&tid, NULL, thread, NULL);			   // line:conc:pre:endcreate
+
+	// while (1) {
+	// 	clientlen = sizeof(struct sockaddr_storage);
+	// 	connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
+	// 	sbuf_insert(&sbuf, connfd); /* Insert connfd in buffer */
+	// }
 	listenfd = Open_listenfd(argv[1]);
 	while (1) {
 		clientlen = sizeof(clientaddr);
-		int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
+		connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // line:netp:tiny:accept
 		Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
 		printf("Accepted connection from (%s, %s)\n", hostname, port);
-		doit(connfd);  // line:netp:tiny:doit
-		Close(connfd); // line:netp:tiny:close
+		sbuf_insert(&sbuf, connfd);
+		// doit(connfd);  // line:netp:tiny:doit
+		// Close(connfd); // line:netp:tiny:close
 	}
 }
 
