@@ -8,10 +8,37 @@
 /* Recommended max cache and object sizes */
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
-#define MAX_STRING_SIZE 12345
+#define MAX_STRING_SIZE 305
+#define CACHE_SIZE 103
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 sbuf_t sbuf;
+sem_t mutex1;
+struct Node {
+	char s[MAX_STRING_SIZE];
+	char *content;
+	int last_time;
+} cache[CACHE_SIZE];
+int cache_num;
+void init() {
+	for (int i = 0; i < CACHE_SIZE; i++) {
+		cache[i].last_time = -1;
+		memset(cache[i].s, 0, sizeof(cache[i].s));
+		cache[i].content = NULL;
+	}
+}
+int find(int fd, char *host) {
+	// return 0;
+	for (int i = 0; i < CACHE_SIZE; i++) {
+		if (strcmp(host, cache[i].s) == 0) {
+			// P(&mutex1);
+			Rio_writen(fd, cache[i].content, strlen(cache[i].content));
+			// V(&mutex1);
+			return 1;
+		}
+	}
+	return 0;
+}
 
 void *thread(void *vargp) {
 	Pthread_detach(pthread_self());
@@ -23,6 +50,7 @@ void *thread(void *vargp) {
 }
 
 int main(int argc, char **argv) {
+	init();
 	char hostname[MAXLINE], port[MAXLINE];
 	socklen_t clientlen;
 	struct sockaddr_storage clientaddr;
@@ -103,7 +131,41 @@ void doit(int fd) {
 	rio_readinitb(&client, clientfd);
 	rio_writen(client.rio_fd, clientRequest, strlen(clientRequest));
 	int n;
-	while ((n = Rio_readnb(&client, response, MAXLINE)) != 0) { Rio_writen(fd, response, n); }
+	if (find(fd, url))
+		return;
+	else {
+		char *s;
+		int flag = 0;
+		s = malloc(MAX_OBJECT_SIZE * (sizeof(char)));
+		s[0] = 0;
+		while ((n = Rio_readnb(&client, response, MAXLINE)) != 0) {
+			Rio_writen(fd, response, n);
+			if (flag == 0 && strlen(s) + n < MAX_OBJECT_SIZE * (sizeof(char)))
+				strcat(s, response);
+			else
+				flag = 1;
+		}
+		if (flag) goto l1;
+		int t_min = 1e8, pos = 0;
+		for (int i = 0; i < CACHE_SIZE; i++) {
+			if (cache[i].last_time < t_min) {
+				t_min = cache[i].last_time;
+				pos = i;
+			}
+		}
+		cache_num++;
+		cache[pos].last_time = cache_num;
+
+		// P(&mutex);
+		// V(&mutex);
+		memcpy(cache[pos].s, url, strlen(url));
+		if (cache[pos].content != NULL) free(cache[pos].content);
+		cache[pos].content = malloc(strlen(s) * sizeof(char) + 8);
+		memcpy(cache[pos].content, s, strlen(s));
+		// V(&mutex);
+	l1:
+		free(s);
+	}
 }
 
 void read_requesthdrs(rio_t *rp, char *host, char *filename, char *version, char *clientRequest) {
