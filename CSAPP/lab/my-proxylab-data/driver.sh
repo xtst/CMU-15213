@@ -70,7 +70,7 @@ function download_noproxy {
 # clear_dirs - Clear the download directories
 #
 function clear_dirs {
-    rm -rf ${PROXY_DIR}/*
+    # rm -rf ${PROXY_DIR}/*
     rm -rf ${NOPROXY_DIR}/*
 }
 
