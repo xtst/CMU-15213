@@ -8,10 +8,10 @@
 #define MAX_STRING_SIZE 12345
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
-static const char *error = "Error!";
+char clientRequest[MAXLINE];
 void doit(int fd);
-void read_requesthdrs(rio_t *rp);
-int parse_uri(char *uri, char *filename, char *cgiargs);
+void read_requesthdrs(rio_t *rp, char *host);
+int parse_uri(char *buf, char *host, char *position);
 void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
 void serve_dynamic(int fd, char *filename, char *cgiargs);
@@ -49,7 +49,7 @@ void doit(int fd) {
 	int is_static;
 	struct stat sbuf;
 	char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-	char filename[MAXLINE], cgiargs[MAXLINE];
+	char filename[MAXLINE], position[MAXLINE], host[MAXLINE];
 	rio_t rio;
 
 	/* Read request line and headers */
@@ -61,8 +61,9 @@ void doit(int fd) {
 	if (strcasecmp(method, "GET")) {			   // line:netp:doit:beginrequesterr
 		clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
 		return;
-	}						// line:netp:doit:endrequesterr
-	read_requesthdrs(&rio); // line:netp:doit:readrequesthdrs
+	}
+	parse_uri(buf, host, position); // line:netp:doit:endrequesterr
+	read_requesthdrs(&rio, host);	// line:netp:doit:readrequesthdrs
 
 	/* Parse URI from GET request */
 	is_static = parse_uri(uri, filename, cgiargs); // line:netp:doit:staticcheck
@@ -91,15 +92,25 @@ void doit(int fd) {
  * read_requesthdrs - read HTTP request headers
  */
 /* $begin read_requesthdrs */
-void read_requesthdrs(rio_t *rp) {
+void read_requesthdrs(rio_t *rp, char *host) {
 	char buf[MAXLINE];
 
 	Rio_readlineb(rp, buf, MAXLINE);
 	printf("%s", buf);
+	int flag_host = 0, flag_user_agent = 0, flag_connection = 0, flag_proxy_connection = 0;
 	while (strcmp(buf, "\r\n")) { // line:netp:readhdrs:checkterm
 		Rio_readlineb(rp, buf, MAXLINE);
+		strcat(clientRequest, buf);
+		if (strstr(buf, "Host") != NULL) { flag_host = 1; }
+		if (strstr(buf, "User-Agent") != NULL) { flag_user_agent = 1; }
+		if (strstr(buf, "Connection") != NULL) { flag_connection = 1; }
+		if (strstr(buf, "Proxy-Connection") != NULL) { flag_proxy_connection = 1; }
 		printf("%s", buf);
 	}
+	if (!flag_host) { strcat(clientRequest, ""); }
+	if (!flag_user_agent) strcat(clientRequest, user_agent_hdr);
+	if (!flag_connection) strcat(clientRequest, "Connection: close");
+	if (!flag_proxy_connection) strcat(clientRequest, "Proxy-Connection: close");
 	return;
 }
 /* $end read_requesthdrs */
@@ -109,27 +120,15 @@ void read_requesthdrs(rio_t *rp) {
  *             return 0 if dynamic content, 1 if static
  */
 /* $begin parse_uri */
-int parse_uri(char *uri, char *filename, char *cgiargs) {
-	char *ptr;
-
-	if (!strstr(uri, "cgi-bin")) { /* Static content */ // line:netp:parseuri:isstatic
-		strcpy(cgiargs, "");							// line:netp:parseuri:clearcgi
-		strcpy(filename, ".");							// line:netp:parseuri:beginconvert1
-		strcat(filename, uri);							// line:netp:parseuri:endconvert1
-		if (uri[strlen(uri) - 1] == '/')				// line:netp:parseuri:slashcheck
-			strcat(filename, "home.html");				// line:netp:parseuri:appenddefault
-		return 1;
-	} else { /* Dynamic content */ // line:netp:parseuri:isdynamic
-		ptr = index(uri, '?');	   // line:netp:parseuri:beginextract
-		if (ptr) {
-			strcpy(cgiargs, ptr + 1);
-			*ptr = '\0';
-		} else
-			strcpy(cgiargs, ""); // line:netp:parseuri:endextract
-		strcpy(filename, ".");	 // line:netp:parseuri:beginconvert2
-		strcat(filename, uri);	 // line:netp:parseuri:endconvert2
-		return 0;
-	}
+int parse_uri(char *buf, char *host, char *position) {
+	char *domain_begin = strchr(buf, '/') + 2;
+	char *domain_last = strchr(domain_begin, '/') - 1;
+	char *position_last = strchr(domain_last + 1, ' ') - 1;
+	char *pos = strstr(buf, "1.1");
+	if (pos != NULL) { pos + 2 = '0'; }
+	strncpy(host, domain_begin, domain_last - domain_begin + 1);
+	strncpy(position, domain_last + 1, position_last - domain_last);
+	printf("host: %s\nposition: %s\n", host, position);
 }
 /* $end parse_uri */
 
