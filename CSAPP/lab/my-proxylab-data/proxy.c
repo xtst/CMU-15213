@@ -8,14 +8,6 @@
 #define MAX_STRING_SIZE 12345
 /* You won't lose style points for including this long line in your code */
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
-char clientRequest[MAXLINE];
-void doit(int fd);
-void read_requesthdrs(rio_t *rp, char *host, char *filename, char *method);
-int parse_uri(char *buf, char *, char *, char *, char *, char *);
-void serve_static(int fd, char *filename, int filesize);
-void get_filetype(char *filename, char *filetype);
-void serve_dynamic(int fd, char *filename, char *cgiargs);
-void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
 
 int main(int argc, char **argv) {
 	int listenfd, connfd;
@@ -41,11 +33,9 @@ int main(int argc, char **argv) {
 }
 
 void doit(int fd) {
-	memset(clientRequest, 0, sizeof(clientRequest));
-	int is_static;
-	struct stat sbuf;
+	char clientRequest[MAXLINE];
 	char buf[MAXLINE], method[MAXLINE], url[MAXLINE], version[MAXLINE];
-	char filename[MAXLINE], host[MAXLINE], cgiargs[MAXLINE];
+	char filename[MAXLINE], host[MAXLINE];
 	rio_t rio;
 
 	/* Read request line and headers */
@@ -65,8 +55,8 @@ void doit(int fd) {
 
 	/* Parse URI from GET request */
 	// printf("clclcllc0:  %s\n\n", clientRequest);
-	is_static = parse_uri(buf, method, url, version, host, filename); // line:netp:doit:staticcheck
-	read_requesthdrs(&rio, host, filename, version);				  // line:netp:doit:readrequesthdrs
+	parse_uri(buf, method, url, version, host, filename);			// line:netp:doit:staticcheck
+	read_requesthdrs(&rio, host, filename, version, clientRequest); // line:netp:doit:readrequesthdrs
 	// if (stat(filename, &sbuf) < 0) {			// line:netp:doit:beginnotfound
 	// 	clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
 	// 	return;
@@ -93,7 +83,7 @@ void doit(int fd) {
 	while ((n = Rio_readnb(&client, response, MAXLINE)) != 0) { Rio_writen(fd, response, n); }
 }
 
-void read_requesthdrs(rio_t *rp, char *host, char *filename, char *version) {
+void read_requesthdrs(rio_t *rp, char *host, char *filename, char *version, char *clientRequest) {
 	char buf[MAXLINE];
 	sprintf(clientRequest, "GET %s %s\r\n", filename, version);
 	Rio_readlineb(rp, buf, MAXLINE);
@@ -122,7 +112,7 @@ void read_requesthdrs(rio_t *rp, char *host, char *filename, char *version) {
 	return;
 }
 
-int parse_uri(char *buf, char *method, char *url, char *version, char *host, char *filename) {
+void parse_uri(char *buf, char *method, char *url, char *version, char *host, char *filename) {
 	sscanf(buf, "%s %s %s", method, url, version);
 	char *domain_begin = strchr(url, '/') + 2;
 	char *domain_last = strchr(domain_begin, '/') - 1;
@@ -132,10 +122,6 @@ int parse_uri(char *buf, char *method, char *url, char *version, char *host, cha
 	strncpy(host, domain_begin, domain_last - domain_begin + 1);
 	strncpy(filename, domain_last + 1, position_last - domain_last);
 	// printf("-=-=- host: %s\nfilename: %s\n", host, filename);
-	if (strchr(buf, '?') != NULL)
-		return 0;
-	else
-		return 1;
 }
 
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg) {
