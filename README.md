@@ -1,23 +1,18 @@
-# CS学习目标（2021-2022第二学期）
----
-## 寒假目标
-1. 学完CSAPP
-2. 学习计算机网络
-3. 学完其他入门课程
-4. 学习Modern C\+\+
-5. 学习另外一门语言
-6. 学习linux内核
+# CSAPP-labs
+【CMU 15-213】深入理解计算机系统 CSAPP
 
----
-## 主线
-### 操作系统 CS15-213: CSAPP (CMU)
-### 编程 CS61A: Structure and Interpretation of Computer Programs (UCB)
-### 计算机网络 CS144： Computer Network (Stanford)
-### 操作系统 CS162: Operating System (UCB)
-### 奔跑吧linux内核
----
-## 支线
-### 基础知识 MIT-Missing-Semester (MIT)
-### Linux：鸟哥
-### C\+\+ CS106L: Standard C\+\+ Programming (Stanford)
-### 体系结构 CS61C: Great Ideas in Computer Architecture (UCB)
+《深入理解计算机系统》第三版的实验文件、解答与笔记
+
+ Solutions and Notes for Labs of Computer Systems: A Programmer's Perspective 3rd Editon
+
+ http://csapp.cs.cmu.edu/3e/labs.html 上有文件，我也下载下来放在了sources文件夹中
+
+ # notes
+
+2021/9/3 开始阅读
+
+2022/3/2 开始学习第九章：虚拟内存
+
+2022/3/7 577页
+
+2022/4/29 阅读完全书，完成所有lab
